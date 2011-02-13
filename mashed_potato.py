@@ -10,9 +10,9 @@ A monitor tool which checks JS files every second and reminifies them
 if they've changed. Just leave it running, monitoring your
 directories.
 
-Usage:
+Usage example:
 
-$ ./potato_mash "../static/js" "../static/js/more"
+$ ./mashed_potato "../static/js" "../static/js/more"
 
 """
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     javascript_directories = sys.argv[1:]
 
     if not javascript_directories:
-        print "Usage: ./potato_mash <JavaScript directory 1> <JavaScript directory 2> ..."
+        print "Usage: ./mashed_potato <JavaScript directory 1> <JavaScript directory 2> ..."
         sys.exit()
     else:
         print "Monitoring JavaScript for changes. Press Ctrl-C to quit."
