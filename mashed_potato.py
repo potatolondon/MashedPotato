@@ -16,6 +16,8 @@ $ ./mashed_potato "../static/js" "../static/js/more"
 
 """
 
+mashed_potato_path = os.path.dirname(__file__)
+
 def is_minifiable(file_name):
     """JS files that aren't yet minified or hidden.
 
@@ -33,8 +35,9 @@ def is_minifiable(file_name):
 
 def minify(js_file_path):
     minified_file_path = js_file_path.replace('.js', '.min.js')
-    os.system('java -jar yuicompressor-2.4.2.jar %s > %s' % \
-                  (js_file_path, minified_file_path))
+
+    os.system('java -jar %s/yuicompressor-2.4.2.jar %s > %s' % \
+                  (mashed_potato_path, js_file_path, minified_file_path))
 
 
 if __name__ == '__main__':
