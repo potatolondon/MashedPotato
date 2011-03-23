@@ -64,7 +64,7 @@ if __name__ == '__main__':
         print "Usage: ./mashed_potato <directory 1> <directory 2> ... [--ignore <script or folder names>]"
         sys.exit()
     else:
-        print "Monitoring JavaScript for changes. Press Ctrl-C to quit.\n"
+        print "Monitoring JavaScript for changes. Press Ctrl-C to quit or Ctrl-Z to stop.\n"
 
     minified_times = {}
 
