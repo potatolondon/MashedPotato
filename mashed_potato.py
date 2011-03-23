@@ -34,6 +34,14 @@ def is_minifiable(file_name):
 
     return True
 
+def is_ignored(file_path, ignore_strings):
+    # exclude what we've been asked to ignore
+    for ignore_string in ignore_strings:
+        if ignore_string in file_path:
+            return True
+    return False
+
+
 def minify(js_file_path):
     minified_file_path = js_file_path.replace('.js', '.min.js')
 
@@ -42,13 +50,21 @@ def minify(js_file_path):
 
 
 if __name__ == '__main__':
-    javascript_directories = sys.argv[1:]
+    arguments = sys.argv[1:]
+
+    if '--ignore' in arguments:
+        flag_position = arguments.index('--ignore')
+        javascript_directories = arguments[:flag_position]
+        ignore_strings = arguments[flag_position+1:]
+    else:
+        javascript_directories = arguments
+        ignore_strings = []
 
     if not javascript_directories:
-        print "Usage: ./mashed_potato <JavaScript directory 1> <JavaScript directory 2> ..."
+        print "Usage: ./mashed_potato <directory 1> <directory 2> ... [--ignore <script or folder names>]"
         sys.exit()
     else:
-        print "Monitoring JavaScript for changes. Press Ctrl-C to quit."
+        print "Monitoring JavaScript for changes. Press Ctrl-C to quit.\n"
 
     minified_times = {}
 
@@ -56,18 +72,19 @@ if __name__ == '__main__':
         time.sleep(1)
 
         for directory in javascript_directories:
-            for file_name in os.listdir(directory):
-                file_path = os.path.join(directory, file_name)
+            for path, subdirs, files in os.walk(directory):
+                for file_name in files:
+                    file_path = os.path.join(path, file_name)
 
-                if is_minifiable(file_name):
-                    modified_time = os.path.getmtime(file_path)
-                    minified_time = minified_times.get(file_path, None)
+                    if is_minifiable(file_name) and not is_ignored(file_path, ignore_strings):
+                        modified_time = os.path.getmtime(file_path)
+                        minified_time = minified_times.get(file_path, None)
 
-                    if not minified_time or modified_time > minified_time:
-                        minified_times[file_path] = modified_time
-                        minify(file_path)
+                        if not minified_time or modified_time > minified_time:
+                            minified_times[file_path] = modified_time
+                            minify(file_path)
 
-                        # inform the user:
-                        now_time = datetime.datetime.now().time()
-                        pretty_now_time = str(now_time).split('.')[0]
-                        print "[%s] Minified %s" % (pretty_now_time, file_path)
+                            # inform the user:
+                            now_time = datetime.datetime.now().time()
+                            pretty_now_time = str(now_time).split('.')[0]
+                            print "[%s] Minified %s" % (pretty_now_time, file_path)
