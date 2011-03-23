@@ -57,7 +57,6 @@ if __name__ == '__main__':
 
         for directory in javascript_directories:
             for file_name in os.listdir(directory):
-                # todo: use os.path.join
                 file_path = os.path.join(directory, file_name)
 
                 if is_minifiable(file_name):
