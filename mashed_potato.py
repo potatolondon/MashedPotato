@@ -3,6 +3,7 @@
 import os
 import sys
 import time
+import datetime
 
 """MashedPotato: An automatic JavaScript minifier
 
@@ -66,3 +67,8 @@ if __name__ == '__main__':
                     if not minified_time or modified_time > minified_time:
                         minified_times[file_path] = modified_time
                         minify(file_path)
+
+                        # inform the user:
+                        now_time = datetime.datetime.now().time()
+                        pretty_now_time = str(now_time).split('.')[0]
+                        print "[%s] Minified %s" % (pretty_now_time, file_path)
