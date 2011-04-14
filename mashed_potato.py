@@ -45,7 +45,7 @@ def is_ignored(file_path, ignore_strings):
 def minify(js_file_path):
     minified_file_path = js_file_path.replace('.js', '.min.js')
 
-    os.system('java -jar %s/yuicompressor-2.4.2.jar %s > %s' % \
+    os.system('java -jar %s/yuicompressor-2.4.5.jar %s > %s' % \
                   (mashed_potato_path, js_file_path, minified_file_path))
 
 
