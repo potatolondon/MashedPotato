@@ -5,11 +5,11 @@ import sys
 import time
 import datetime
 
-"""MashedPotato: An automatic JavaScript minifier
+"""MashedPotato: An automatic JavaScript and CSS minifier
 
-A monitor tool which checks JS files every second and reminifies them
-if they've changed. Just leave it running, monitoring your
-directories.
+A monitor tool which checks JS and CSS files every second and
+reminifies them if they've changed. Just leave it running, monitoring
+your directories.
 
 Usage example:
 
@@ -20,16 +20,16 @@ $ ./mashed_potato "../static/js" "../static/js/more"
 mashed_potato_path = os.path.dirname(__file__)
 
 def is_minifiable(file_name):
-    """JS files that aren't yet minified or hidden.
+    """JS or CSS files that aren't yet minified or hidden.
 
     """
     if file_name.startswith('.'):
         return False
 
-    if not file_name.endswith('.js'):
+    if not (file_name.endswith('.js') or file_name.endswith('.css')):
         return False
 
-    if file_name.endswith('.min.js'):
+    if file_name.endswith('.min.js') or file_name.endswith('.min.css'):
         return False
 
     return True
@@ -42,11 +42,14 @@ def is_ignored(file_path, ignore_strings):
     return False
 
 
-def minify(js_file_path):
-    minified_file_path = js_file_path.replace('.js', '.min.js')
+def minify(file_path):
+    if file_path.endswith('.js'):
+        minified_file_path = file_path.replace('.js', '.min.js')
+    else:
+        minified_file_path = file_path.replace('.css', '.min.css')
 
     os.system('java -jar %s/yuicompressor-2.4.5.jar %s > %s' % \
-                  (mashed_potato_path, js_file_path, minified_file_path))
+                  (mashed_potato_path, file_path, minified_file_path))
 
 
 if __name__ == '__main__':
@@ -64,7 +67,7 @@ if __name__ == '__main__':
         print "Usage: ./mashed_potato <directory 1> <directory 2> ... [--ignore <script or folder names>]"
         sys.exit()
     else:
-        print "Monitoring JavaScript for changes. Press Ctrl-C to quit or Ctrl-Z to stop.\n"
+        print "Monitoring JavaScript and CSS files for changes.\nPress Ctrl-C to quit or Ctrl-Z to stop.\n"
 
     minified_times = {}
 
