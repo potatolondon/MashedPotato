@@ -1,0 +1,9 @@
+# specifying specific directories (note we have to specify subdirectories)
+static/js
+static/js/gxbo
+static/css
+
+# specifying ranges of directories using regular expressions
+static/i18n/[^/]*/css
+static/i18n/(au|de)/js
+

@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import datetime
+import re
 
 """MashedPotato: An automatic JavaScript and CSS minifier
 
@@ -11,16 +12,45 @@ A monitor tool which checks JS and CSS files every second and
 reminifies them if they've changed. Just leave it running, monitoring
 your directories.
 
+Specify a .mash file in your root directory to tell MashedPotato which
+directories to monitor. See .mash_example for an example.
+
 Usage example:
 
-$ ./mashed_potato "../static/js" "../static/js/more"
+$ ./mashed_potato /home/wilfred/work/gxbo
 
 """
 
-mashed_potato_path = os.path.dirname(__file__)
+def get_paths_from_configuration(configuration_path):
+    path_regexps = []
+    
+    for (line_number, line) in enumerate(open(configuration_path, 'r').readlines()):
+        line = line.strip()
+
+        if not line.startswith('#'):
+            if line:
+                raw_regexp = "^" + line + "$"
+                path_regexps.append(raw_regexp)
+
+            if line.endswith('/'):
+                print("Warning: directory regexps must not end with '/'. "
+                      "Line %d will not do anything." % (line_number + 1)) # lines are zero-indexed
+
+    return path_regexps
+
+def is_being_monitored(path_regexps, directory_path):
+    """Test whether this file matches any of the path regular
+    expressions in the .mash configuration.
+    
+    """
+    for regexp in path_regexps:
+        if re.match(regexp, directory_path):
+            return True
+
+    return False
 
 def is_minifiable(file_name):
-    """JS or CSS files that aren't yet minified or hidden.
+    """JS or CSS files that aren't minified or hidden.
 
     """
     if file_name.startswith('.'):
@@ -44,7 +74,7 @@ def get_minified_name(file_path):
     """
     if file_path.endswith('.js'):
         minified_path = file_path[:-3] + '.min.js'
-    elif file_name.endswith('.css'):
+    elif file_path.endswith('.css'):
         minified_path = file_path[:-4] + '.min.css'
 
     return minified_path
@@ -58,15 +88,15 @@ def needs_minifying(file_path):
     source_edited_time = os.path.getmtime(file_path)
 
     last_minified_time = None
-    minifed_file_path = get_minified_name(file_path)
+    minified_file_path = get_minified_name(file_path)
 
-    if os.path.exists(minifed_file_path):
-        last_minified_time = os.path.getmtime(minifed_file_path)
+    if os.path.exists(minified_file_path):
+        last_minified_time = os.path.getmtime(minified_file_path)
 
     if last_minified_time and last_minified_time > source_edited_time:
-        return True
+        return False
 
-    return False
+    return True
 
 
 def is_ignored(file_path, ignore_strings):
@@ -78,6 +108,8 @@ def is_ignored(file_path, ignore_strings):
 
 
 def minify(file_path):
+    mashed_potato_path = os.path.dirname(__file__)
+
     if file_path.endswith('.js'):
         minified_file_path = file_path.replace('.js', '.min.js')
     else:
@@ -87,37 +119,48 @@ def minify(file_path):
                   (mashed_potato_path, file_path, minified_file_path))
 
 
-if __name__ == '__main__':
-    arguments = sys.argv[1:]
-
-    if '--ignore' in arguments:
-        flag_position = arguments.index('--ignore')
-        javascript_directories = arguments[:flag_position]
-        ignore_strings = arguments[flag_position+1:]
-    else:
-        javascript_directories = arguments
-        ignore_strings = []
-
-    if not javascript_directories:
-        print "Usage: ./mashed_potato <directory 1> <directory 2> ... [--ignore <script or folder names>]"
-        sys.exit()
-    else:
-        print "Monitoring JavaScript and CSS files for changes.\nPress Ctrl-C to quit or Ctrl-Z to stop.\n"
-
+def continually_monitor_files(path_regexps, project_path):
     while True:
         time.sleep(1)
 
-        for directory in javascript_directories:
-            for path, subdirs, files in os.walk(directory):
+        for directory_path, subdirectories, files in os.walk(project_path):
+            directory_path = directory_path[2:] # remove leading ./
+            if is_being_monitored(path_regexps, directory_path):
+            
                 for file_name in files:
-                    file_path = os.path.join(path, file_name)
+                    file_path = os.path.join(directory_path, file_name)
 
-                    if is_minifiable(file_name) and not is_ignored(file_path, ignore_strings):
+                    if is_minifiable(file_name) and needs_minifying(file_path):
 
-                        if needs_minifying(file_path):
-                            minify(file_path)
+                        minify(file_path)
 
-                            # inform the user:
-                            now_time = datetime.datetime.now().time()
-                            pretty_now_time = str(now_time).split('.')[0]
-                            print "[%s] Minified %s" % (pretty_now_time, file_path)
+                        # inform the user:
+                        now_time = datetime.datetime.now().time()
+                        pretty_now_time = str(now_time).split('.')[0]
+                        print "[%s] Minified %s" % (pretty_now_time, file_path)
+
+
+if __name__ == '__main__':
+    try:
+        project_path = sys.argv[1]
+        configuration_path = os.path.join(os.path.dirname(project_path), ".mash")
+    except IndexError:
+        print "Usage: ./mashed_potato <directory containing .mash file>"
+        sys.exit()
+
+    if os.path.exists(configuration_path):
+        path_regexps = get_paths_from_configuration(configuration_path)
+    else:
+        print "There isn't a .mash file at \"%s\"." % os.path.abspath(project_path)
+        print "Look at .mash_example in %s for an example." % os.path.abspath(os.path.dirname(__file__))
+        sys.exit()
+
+    print "Monitoring JavaScript and CSS files for changes."
+    print "Press Ctrl-C to quit or Ctrl-Z to stop."
+    print ""
+
+    try:
+        continually_monitor_files(path_regexps, project_path)
+    except KeyboardInterrupt:
+        print "" # for tidyness' sake
+
