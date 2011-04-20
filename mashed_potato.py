@@ -110,13 +110,9 @@ def is_ignored(file_path, ignore_strings):
 def minify(file_path):
     mashed_potato_path = os.path.dirname(__file__)
 
-    if file_path.endswith('.js'):
-        minified_file_path = file_path.replace('.js', '.min.js')
-    else:
-        minified_file_path = file_path.replace('.css', '.min.css')
-
     os.system('java -jar %s/yuicompressor-2.4.5.jar %s > %s' % \
-                  (mashed_potato_path, file_path, minified_file_path))
+                  (mashed_potato_path, file_path,
+                   get_minified_name(file_path)))
 
 
 def continually_monitor_files(path_regexps, project_path):
