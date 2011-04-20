@@ -1,9 +1,18 @@
-# specifying specific directories (note we have to specify subdirectories)
+# lines starting with # are ignored
+
+# blank lines are also ignored
+
+# MashedPotato takes regular expresssions that specify directories, not files:
 static/js
-static/js/gxbo
 static/css
 
-# specifying ranges of directories using regular expressions
-static/i18n/[^/]*/css
-static/i18n/(au|de)/js
+# we have to specify subdirectories specifically
+static/js/gxbo
 
+# don't use trailing slashes, these won't match anything
+# (MashedPotato will generate a warning for these)
+static/js/gxbo/
+
+# you can use any regular expression that python recognises
+static/i18n/[^/]+/css
+static/i18n/(au|de)/js
