@@ -17,14 +17,18 @@ directories to monitor. See .mash_example for an example.
 
 Usage example:
 
-$ ./mashed_potato /home/wilfred/work/gxbo
+$ ./mashed_potato.py /home/wilfred/work/gxbo
+
+To run the tests:
+
+$ ./tests
 
 """
 
-def get_paths_from_configuration(configuration_path):
+def get_paths_from_configuration(configuration_file):
     path_regexps = []
     
-    for (line_number, line) in enumerate(open(configuration_path, 'r').readlines()):
+    for (line_number, line) in enumerate(configuration_file.split('\n')):
         line = line.strip()
 
         if not line.startswith('#'):
@@ -145,7 +149,8 @@ if __name__ == '__main__':
         sys.exit()
 
     if os.path.exists(configuration_path):
-        path_regexps = get_paths_from_configuration(configuration_path)
+        configuration_file = open(configuration_path, 'r').read()
+        path_regexps = get_paths_from_configuration(configuration_file)
     else:
         print "There isn't a .mash file at \"%s\"." % os.path.abspath(project_path)
         print "Look at .mash_example in %s for an example." % os.path.abspath(os.path.dirname(__file__))
