@@ -142,8 +142,8 @@ def continually_monitor_files(path_regexps, project_path):
 
 if __name__ == '__main__':
     try:
-        project_path = sys.argv[1]
-        configuration_path = os.path.join(os.path.dirname(project_path), ".mash")
+        project_path = os.path.abspath(sys.argv[1])
+        configuration_path = os.path.join(project_path, ".mash")
     except IndexError:
         print "Usage: ./mashed_potato <directory containing .mash file>"
         sys.exit()
