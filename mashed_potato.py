@@ -26,22 +26,38 @@ $ ./tests
 
 """
 
-def get_paths_from_configuration(configuration_file):
+# paths/error times of files we failed to minify
+error_files = {}
+
+def get_paths_from_configuration(project_path, configuration_file):
     path_regexps = []
     
     for (line_number, line) in enumerate(configuration_file.split('\n')):
         line = line.strip()
 
-        if not line.startswith('#'):
-            if line:
-                raw_regexp = "^" + line + "$"
-                path_regexps.append(raw_regexp)
-
+        if line and not line.startswith('#'):
             if line.endswith('/'):
                 print("Warning: directory regexps must not end with '/'. "
-                      "Line %d will not do anything." % (line_number + 1)) # lines are zero-indexed
+                      "Line %d will not do anything." % (line_number + 1))
+                                                      # lines are zero-indexed
+            else:
+                path_regexps.append(get_path_regexp(project_path, line))
 
     return path_regexps
+
+
+def get_path_regexp(project_path, relative_regexp):
+    """Convert a path regexp accepted by mashed_potato to a regular
+    expression which matches an absolute path.
+
+    >>> get_path_regexp("/home/wilfred/gxbo", "foo/{a,b}")
+    ^/home/wilfred/gxbo/foo/{a,b}$
+    
+    """
+    absolute_regexp = os.path.join(project_path, relative_regexp)
+
+    return "^%s$" % absolute_regexp
+
 
 def is_being_monitored(path_regexps, directory_path):
     """Test whether this file matches any of the path regular
@@ -86,8 +102,9 @@ def get_minified_name(file_path):
 
 
 def needs_minifying(file_path):
-    """Returns false only if a file already has a minified file, and
-    the minified file is newer than the source.
+    """Returns false if a file already has a minified file, and the
+    minified file is newer than the source. We return false on files
+    that errored last time and haven't changed since.
 
     """
     source_edited_time = os.path.getmtime(file_path)
@@ -164,36 +181,37 @@ def minify(file_path):
 
 def continually_monitor_files(path_regexps, project_path):
     while True:
-        time.sleep(1)
-
         for directory_path, subdirectories, files in os.walk(project_path):
-            directory_path = directory_path[2:] # remove leading ./
+            directory_path = os.path.abspath(directory_path)
             if is_being_monitored(path_regexps, directory_path):
             
                 for file_name in files:
                     file_path = os.path.join(directory_path, file_name)
 
                     if is_minifiable(file_name) and needs_minifying(file_path):
-
                         minify(file_path)
-
-                        # inform the user:
-                        now_time = datetime.datetime.now().time()
-                        pretty_now_time = str(now_time).split('.')[0]
-                        print "[%s] Minified %s" % (pretty_now_time, file_path)
+                        
+        time.sleep(1)
 
 
 if __name__ == '__main__':
     try:
-        project_path = os.path.abspath(sys.argv[1])
+        project_path = sys.argv[1]
+        project_path = os.path.abspath(project_path)
         configuration_path = os.path.join(project_path, ".mash")
+
+        print project_path
+        print configuration_path
     except IndexError:
         print "Usage: ./mashed_potato <directory containing .mash file>"
         sys.exit()
 
     if os.path.exists(configuration_path):
         configuration_file = open(configuration_path, 'r').read()
-        path_regexps = get_paths_from_configuration(configuration_file)
+        path_regexps = get_paths_from_configuration(project_path, configuration_file)
+
+        print path_regexps
+
     else:
         print "There isn't a .mash file at \"%s\"." % os.path.abspath(project_path)
         print "Look at .mash_example in %s for an example." % os.path.abspath(os.path.dirname(__file__))
