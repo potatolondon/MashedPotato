@@ -152,31 +152,30 @@ def minify(file_path):
 
     if error:
         print "Error minifying %s" % file_path
-        if file_path not in error_files:
-            error_files[file_path] = time.time()
+        update_error_logs(True, file_path)
     else:
-        # the file is good so remove it from the errored file list
-        if file_path in error_files:
-            del error_files[file_path]
-
-    # update MASH_ERRORS so it records the files that are currently erroring
-    error_file_path = os.path.join(project_path, 'MASH_ERRORS')
-    if error_files:
-        f = open(error_file_path, 'wb')
-        for file in error_files.keys():
-            f.write('%s\n' % file)
-            f.close()
-    else:
-        try:
-            os.remove(error_file_path)
-        except OSError:
-            pass
-
-    if not error:
         # inform the user:
         now_time = datetime.datetime.now().time()
         pretty_now_time = str(now_time).split('.')[0]
         print "[%s] Minified %s" % (pretty_now_time, file_path)
+
+        update_error_logs(False, file_path)
+
+
+def update_error_logs(errored, path):
+    if errored:
+        error_files[path] = time.time()
+    else:
+        # the file is good so remove it from the errored file list
+        if path in error_files:
+            del error_files[path]
+
+    # update MASH_ERRORS so it records the files that are currently erroring
+    error_file_path = os.path.join(project_path, 'MASH_ERRORS')
+
+    with open(error_file_path, 'wb') as error_log:
+        for file in error_files.keys():
+            error_log.write('%s\n' % file)
 
 
 def continually_monitor_files(path_regexps, project_path):
