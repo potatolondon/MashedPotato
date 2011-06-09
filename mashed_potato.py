@@ -5,6 +5,7 @@ import sys
 import time
 import datetime
 import re
+import subprocess
 
 """MashedPotato: An automatic JavaScript and CSS minifier
 
@@ -97,7 +98,13 @@ def needs_minifying(file_path):
     if os.path.exists(minified_file_path):
         last_minified_time = os.path.getmtime(minified_file_path)
 
+    # don't minify if it is already minified and hasn't changed since
     if last_minified_time and last_minified_time > source_edited_time:
+        return False
+
+    # don't attempt to minify if there was an error last time and it
+    # hasn't changed since
+    if file_path in error_files and error_files[file_path] > source_edited_time:
         return False
 
     return True
@@ -112,11 +119,47 @@ def is_ignored(file_path, ignore_strings):
 
 
 def minify(file_path):
-    mashed_potato_path = os.path.dirname(__file__)
+    mashed_potato_path = os.path.dirname(os.path.abspath(__file__))
+    command_line ='java -jar %s/yuicompressor-2.4.5.jar %s > %s' % \
+                  (mashed_potato_path, file_path, get_minified_name(file_path))
 
-    os.system('java -jar %s/yuicompressor-2.4.5.jar %s > %s' % \
-                  (mashed_potato_path, file_path,
-                   get_minified_name(file_path)))
+    try:
+        p = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, close_fds=True)
+    except OSError, e:
+        print "\nAn error occured running\n%s\n" % command_line
+        print e.strerror
+        sys.exit()
+
+    error = p.stderr.read()
+
+    if error:
+        print "Error minifying %s" % file_path
+        if file_path not in error_files:
+            error_files[file_path] = time.time()
+    else:
+        # the file is good so remove it from the errored file list
+        if file_path in error_files:
+            del error_files[file_path]
+
+    # update MASH_ERRORS so it records the files that are currently erroring
+    error_file_path = os.path.join(project_path, 'MASH_ERRORS')
+    if error_files:
+        f = open(error_file_path, 'wb')
+        for file in error_files.keys():
+            f.write('%s\n' % file)
+            f.close()
+    else:
+        try:
+            os.remove(error_file_path)
+        except OSError:
+            pass
+
+    if not error:
+        # inform the user:
+        now_time = datetime.datetime.now().time()
+        pretty_now_time = str(now_time).split('.')[0]
+        print "[%s] Minified %s" % (pretty_now_time, file_path)
 
 
 def continually_monitor_files(path_regexps, project_path):
