@@ -198,9 +198,6 @@ if __name__ == '__main__':
         project_path = sys.argv[1]
         project_path = os.path.abspath(project_path)
         configuration_path = os.path.join(project_path, ".mash")
-
-        print project_path
-        print configuration_path
     except IndexError:
         print "Usage: ./mashed_potato <directory containing .mash file>"
         sys.exit()
