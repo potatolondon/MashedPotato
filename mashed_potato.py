@@ -127,14 +127,6 @@ def needs_minifying(file_path):
     return True
 
 
-def is_ignored(file_path, ignore_strings):
-    # exclude what we've been asked to ignore
-    for ignore_string in ignore_strings:
-        if ignore_string in file_path:
-            return True
-    return False
-
-
 def minify(file_path):
     mashed_potato_path = os.path.dirname(os.path.abspath(__file__))
     command_line ='java -jar %s/yuicompressor-2.4.5.jar %s > %s' % \
