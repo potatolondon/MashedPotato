@@ -30,6 +30,11 @@ $ ./tests
 error_files = {}
 
 def get_paths_from_configuration(project_path, configuration_file):
+    """Given a the contents of a configuration file, return a list of
+    regular expressions that match absolute paths according to that
+    configuration.
+    
+    """
     path_regexps = []
     
     for (line_number, line) in enumerate(configuration_file.split('\n')):
