@@ -203,8 +203,6 @@ if __name__ == '__main__':
         configuration_file = open(configuration_path, 'r').read()
         path_regexps = get_paths_from_configuration(project_path, configuration_file)
 
-        print path_regexps
-
     else:
         print "There isn't a .mash file at \"%s\"." % os.path.abspath(project_path)
         print "Look at .mash_example in %s for an example." % os.path.abspath(os.path.dirname(__file__))
