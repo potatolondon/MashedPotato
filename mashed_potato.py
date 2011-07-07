@@ -181,6 +181,12 @@ def minify(file_path):
 
 
 def update_error_logs(errored, path):
+    """Write a list of files that aren't minifying into a file called
+    MASH_ERRORS in the project dir.
+
+    If nothing has errored, remove the file entirely.
+
+    """
     if errored:
         error_files[path] = time.time()
     else:
@@ -191,9 +197,14 @@ def update_error_logs(errored, path):
     # update MASH_ERRORS so it records the files that are currently erroring
     error_file_path = os.path.join(project_path, 'MASH_ERRORS')
 
-    with open(error_file_path, 'wb') as error_log:
-        for file in error_files.keys():
-            error_log.write('%s\n' % file)
+    if error_files:
+        with open(error_file_path, 'wb') as error_log:
+            for file_path in error_files.keys():
+                error_log.write('%s\n' % file_path)
+
+    else:
+        if os.path.exists(error_file_path):
+            os.remove(error_file_path)
 
 
 def all_monitored_files(path_regexps, project_path):
