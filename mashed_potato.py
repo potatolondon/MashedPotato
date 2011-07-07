@@ -30,6 +30,9 @@ $ ./tests
 # paths/error times of files we failed to minify
 error_files = {}
 
+class MinifyFailed(Exception): pass
+
+
 def get_paths_from_configuration(project_path, configuration_file):
     """Given a the contents of a configuration file, return a list of
     regular expressions that match absolute paths according to that
