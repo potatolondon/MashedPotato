@@ -78,10 +78,12 @@ def path_matches_regexps(path, path_regexps):
 
     return False
 
-def is_minifiable(file_name):
+def is_minifiable(file_path):
     """JS or CSS files that aren't minified or hidden.
 
     """
+    directory_path, file_name = os.path.split(file_path)
+    
     if file_name.startswith('.'):
         return False
 
@@ -203,16 +205,17 @@ def all_monitored_files(path_regexps, project_path):
     
     for subdirectory_path, subdirectories, files in os.walk(project_path):
         if path_matches_regexps(subdirectory_path, path_regexps):
+
+            # this directory matches, so yield all its contents
             for file_name in files:
                 file_path = os.path.join(subdirectory_path, file_name)
-                
-                yield (file_name, file_path)
+                yield file_path
 
 
 def continually_monitor_files(path_regexps, project_path):
     while True:
-        for (file_name, file_path) in all_monitored_files(path_regexps, project_path):
-            if is_minifiable(file_name) and needs_minifying(file_path):
+        for file_path in all_monitored_files(path_regexps, project_path):
+            if is_minifiable(file_path) and needs_minifying(file_path):
                 try:
                     minify(file_path)
 
