@@ -172,17 +172,8 @@ def minify(file_path):
         sys.exit()
 
     error = p.stderr.read()
-
     if error:
-        print "Error minifying %s" % file_path
-        update_error_logs(True, file_path)
-    else:
-        # inform the user:
-        now_time = datetime.datetime.now().time()
-        pretty_now_time = str(now_time).split('.')[0]
-        print "[%s] Minified %s" % (pretty_now_time, file_path)
-
-        update_error_logs(False, file_path)
+        raise MinifyFailed()
 
 
 def update_error_logs(errored, path):
@@ -211,7 +202,19 @@ def continually_monitor_files(path_regexps, project_path):
                     file_path = os.path.join(directory_path, file_name)
 
                     if is_minifiable(file_name) and needs_minifying(file_path):
-                        minify(file_path)
+                        try:
+                            minify(file_path)
+                            
+                            # inform the user:
+                            now_time = datetime.datetime.now().time()
+                            pretty_now_time = str(now_time).split('.')[0]
+                            print "[%s] Minified %s" % (pretty_now_time, file_path)
+
+                            update_error_logs(False, file_path)
+                            
+                        except MinifyFailed:
+                            print "Error minifying %s" % file_path
+                            update_error_logs(True, file_path)
                         
         time.sleep(1)
 
