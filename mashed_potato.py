@@ -68,13 +68,12 @@ def get_path_regexp(project_path, relative_regexp):
     return "^%s$" % absolute_regexp
 
 
-def is_being_monitored(path_regexps, directory_path):
-    """Test whether this file matches any of the path regular
-    expressions in the .mash configuration.
+def path_matches_regexps(path, path_regexps):
+    """Test whether this path matches any of the given regular expressions.
     
     """
     for regexp in path_regexps:
-        if re.match(regexp, directory_path):
+        if re.match(regexp, path):
             return True
 
     return False
@@ -195,29 +194,38 @@ def update_error_logs(errored, path):
             error_log.write('%s\n' % file)
 
 
+def all_monitored_files(path_regexps, project_path):
+    """For all the subdirectories in this path which match a
+    path_regexp, return a list of their files and paths.
+
+    """
+    assert os.path.isabs(project_path), "project_path should be absolute"
+    
+    for subdirectory_path, subdirectories, files in os.walk(project_path):
+        if path_matches_regexps(subdirectory_path, path_regexps):
+            for file_name in files:
+                file_path = os.path.join(subdirectory_path, file_name)
+                
+                yield (file_name, file_path)
+
+
 def continually_monitor_files(path_regexps, project_path):
     while True:
-        for directory_path, subdirectories, files in os.walk(project_path):
-            directory_path = os.path.abspath(directory_path)
-            if is_being_monitored(path_regexps, directory_path):
-            
-                for file_name in files:
-                    file_path = os.path.join(directory_path, file_name)
+        for (file_name, file_path) in all_monitored_files(path_regexps, project_path):
+            if is_minifiable(file_name) and needs_minifying(file_path):
+                try:
+                    minify(file_path)
 
-                    if is_minifiable(file_name) and needs_minifying(file_path):
-                        try:
-                            minify(file_path)
-                            
-                            # inform the user:
-                            now_time = datetime.datetime.now().time()
-                            pretty_now_time = str(now_time).split('.')[0]
-                            print "[%s] Minified %s" % (pretty_now_time, file_path)
+                    # inform the user:
+                    now_time = datetime.datetime.now().time()
+                    pretty_now_time = str(now_time).split('.')[0]
+                    print "[%s] Minified %s" % (pretty_now_time, file_path)
 
-                            update_error_logs(False, file_path)
-                            
-                        except MinifyFailed:
-                            print "Error minifying %s" % file_path
-                            update_error_logs(True, file_path)
+                    update_error_logs(False, file_path)
+
+                except MinifyFailed:
+                    print "Error minifying %s" % file_path
+                    update_error_logs(True, file_path)
                         
         time.sleep(1)
 
