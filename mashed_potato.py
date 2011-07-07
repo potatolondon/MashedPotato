@@ -132,11 +132,36 @@ def needs_minifying(file_path):
 
     return True
 
+def is_uglifyjs_installed():
+    """Is uglifyjs installed and on PATH?
+
+    If you want it installed:
+    $ npm install uglify-js
+
+    """
+    for path in os.environ["PATH"].split(os.pathsep):
+        full_path = os.path.join(path, "uglifyjs")
+
+        if os.path.exists(full_path):
+            return True
+
+    return False
 
 def minify(file_path):
-    mashed_potato_path = os.path.dirname(os.path.abspath(__file__))
-    command_line ='java -jar %s/yuicompressor-2.4.5.jar %s > %s' % \
-                  (mashed_potato_path, file_path, get_minified_name(file_path))
+    """Create a minified JS or CSS file of the file at file_path.
+
+    For JS we use uglifyjs if it's available, since the compression is
+    better. CSS always uses YUICompressor.
+
+    """
+    if file_path.endswith(".js") and is_uglifyjs_installed():
+        # strip comments at the start:
+        command_line = "uglifyjs -nc %s > %s" % \
+            (file_path, get_minified_name(file_path))
+    else:
+        mashed_potato_path = os.path.dirname(os.path.abspath(__file__))
+        command_line ='java -jar %s/yuicompressor-2.4.5.jar %s > %s' % \
+            (mashed_potato_path, file_path, get_minified_name(file_path))
 
     try:
         p = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE,
