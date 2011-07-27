@@ -1,6 +1,6 @@
 # Mashed Potato
 
-A script that monitors your directories and minifies any JS or CSS it finds.
+A script that monitors your directories and minifies any JS or CSS it finds. Requires Python 2.5+, no Python 3 support yet.
 
 GPL v2 license.
 
