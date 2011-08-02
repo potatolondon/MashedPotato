@@ -8,6 +8,8 @@ import datetime
 import re
 import subprocess
 
+# todo: don't break if java isn't on PATH
+
 """MashedPotato: An automatic JavaScript and CSS minifier
 
 A monitor tool which checks JS and CSS files every second and
@@ -136,15 +138,12 @@ def needs_minifying(file_path):
 
     return True
 
-def is_uglifyjs_installed():
-    """Is uglifyjs installed and on PATH?
-
-    If you want it installed:
-    $ npm install uglify-js
-
+def is_installed(name):
+    """Is this tool installed and on path?
+    
     """
     for path in os.environ["PATH"].split(os.pathsep):
-        full_path = os.path.join(path, "uglifyjs")
+        full_path = os.path.join(path, name)
 
         if os.path.exists(full_path):
             return True
@@ -158,7 +157,7 @@ def minify(file_path):
     better. CSS always uses YUICompressor.
 
     """
-    if file_path.endswith(".js") and is_uglifyjs_installed():
+    if file_path.endswith(".js") and is_installed('uglifyjs'):
         # strip comments at the start:
         command_line = "uglifyjs -nc %s > %s" % \
             (file_path, get_minified_name(file_path))
@@ -166,6 +165,7 @@ def minify(file_path):
         mashed_potato_path = os.path.dirname(os.path.abspath(__file__))
         command_line ='java -jar %s/yuicompressor-2.4.5.jar %s > %s' % \
             (mashed_potato_path, file_path, get_minified_name(file_path))
+        print command_line
 
     try:
         p = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE,
