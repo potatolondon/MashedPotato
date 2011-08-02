@@ -245,6 +245,10 @@ def continually_monitor_files(path_regexps, project_path):
 
 
 if __name__ == '__main__':
+    if not is_installed('java'):
+        print "You need Java installed and on your PATH to run MashedPotato."
+        sys.exit(1)
+    
     try:
         project_path = sys.argv[1]
         project_path = os.path.abspath(project_path)
