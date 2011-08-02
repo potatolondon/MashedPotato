@@ -165,7 +165,6 @@ def minify(file_path):
         mashed_potato_path = os.path.dirname(os.path.abspath(__file__))
         command_line ='java -jar %s/yuicompressor-2.4.5.jar %s > %s' % \
             (mashed_potato_path, file_path, get_minified_name(file_path))
-        print command_line
 
     try:
         p = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE,
