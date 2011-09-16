@@ -66,6 +66,7 @@ def get_path_regexp(project_path, relative_regexp):
     
     """
     absolute_regexp = os.path.join(project_path, relative_regexp)
+    absolute_regexp = absolute_regexp.replace('\\', '/')
 
     return "^%s$" % absolute_regexp
 
@@ -74,6 +75,7 @@ def path_matches_regexps(path, path_regexps):
     """Test whether this path matches any of the given regular expressions.
     
     """
+    path = path.replace('\\','/')
     for regexp in path_regexps:
         if re.match(regexp, path):
             return True
@@ -167,8 +169,12 @@ def minify(file_path):
             (mashed_potato_path, file_path, get_minified_name(file_path))
 
     try:
-        p = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE, close_fds=True)
+        if sys.platform == 'win32':
+            p = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+        else:
+            p = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, close_fds=True)
     except OSError, e:
         print "\nAn error occured running\n%s\n" % command_line
         print e.strerror
@@ -244,7 +250,11 @@ def continually_monitor_files(path_regexps, project_path):
 
 
 if __name__ == '__main__':
-    if not is_installed('java'):
+    if sys.platform == 'win32':
+        java_installed = is_installed('java.exe')
+    else:
+        java_installed = is_installed('java')
+    if not java_installed:
         print "You need Java installed and on your PATH to run MashedPotato."
         sys.exit(1)
     
