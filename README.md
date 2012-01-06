@@ -1,8 +1,13 @@
 # Mashed Potato
 
-A script that monitors your directories and minifies any JS or CSS it finds. Requires Python 2.5+, no Python 3 support yet.
+A script that monitors your directories and minifies any JS or CSS it finds. Requires Python 2.7+, no Python 3 support yet.
 
 GPL v2 license.
+
+## Requirements
+
+If you're on a Mac, you'll want to have https://github.com/malthe/macfsevents installed. 
+This allows MashedPotato to get notified of changed files, without having to manually poll.
 
 ##  Usage
 

@@ -1,16 +1,5 @@
-#!/usr/bin/env python2
-from __future__ import with_statement
-
-import os
-import sys
-import time
-import datetime
-import re
-import subprocess
-
-# todo: don't break if java isn't on PATH
-
-"""MashedPotato: An automatic JavaScript and CSS minifier
+#!/usr/bin/env python2.7
+"""MashedPotato: An automatic JS and CSS minifier
 
 A monitor tool which checks JS and CSS files every second and
 reminifies them if they've changed. Just leave it running, monitoring
@@ -28,6 +17,23 @@ To run the tests:
 $ ./tests
 
 """
+
+from __future__ import with_statement
+
+import os
+import sys
+import time
+import datetime
+import re
+import subprocess
+import logging
+
+mac = True if sys.platform == 'darwin' else False
+if mac:
+    from fsevents import Observer, Stream
+
+mashed_potato_path = os.path.abspath(os.path.dirname(sys.argv[0]))
+logging.warn(mashed_potato_path)
 
 # paths/error times of files we failed to minify
 error_files = {}
@@ -48,9 +54,8 @@ def get_paths_from_configuration(project_path, configuration_file):
 
         if line and not line.startswith('#'):
             if line.endswith('/'):
-                print("Warning: directory regexps must not end with '/'. "
-                      "Line %d will not do anything." % (line_number + 1))
-                                                      # lines are zero-indexed
+                # lines are zero-indexed
+                print("Warning: directory regexps must not end with '/'. " "Line %d will not do anything." % (line_number + 1))              
             else:
                 path_regexps.append(get_path_regexp(project_path, line))
 
@@ -161,20 +166,15 @@ def minify(file_path):
     """
     if file_path.endswith(".js") and is_installed('uglifyjs'):
         # strip comments at the start:
-        command_line = "uglifyjs -nc %s > %s" % \
-            (file_path, get_minified_name(file_path))
+        command_line = "uglifyjs -nc %s > %s" % (file_path, get_minified_name(file_path))
     else:
-        mashed_potato_path = os.path.dirname(os.path.abspath(__file__))
-        command_line ='java -jar %s/yuicompressor-2.4.5.jar %s > %s' % \
-            (mashed_potato_path, file_path, get_minified_name(file_path))
+        command_line ='java -jar %s/yuicompressor-2.4.5.jar %s > %s' % (mashed_potato_path, file_path, get_minified_name(file_path))
 
     try:
         if sys.platform == 'win32':
-            p = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+            p = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         else:
-            p = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE, close_fds=True)
+            p = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
     except OSError, e:
         print "\nAn error occured running\n%s\n" % command_line
         print e.strerror
@@ -182,16 +182,14 @@ def minify(file_path):
 
     error = p.stderr.read()
     if error:
+        print 'oh noes'
+        print error
         raise MinifyFailed()
 
 
 def update_error_logs(errored, path):
-    """Write a list of files that aren't minifying into a file called
-    MASH_ERRORS in the project dir.
-
-    If nothing has errored, remove the file entirely.
-
-    """
+    """Write a list of files that aren't minifying into a file called MASH_ERRORS in the project dir.
+    If nothing has errored, remove the file entirely. """
     if errored:
         error_files[path] = time.time()
     else:
@@ -227,28 +225,44 @@ def all_monitored_files(path_regexps, project_path):
                 file_path = os.path.join(subdirectory_path, file_name)
                 yield file_path
 
+def tell_user_and_minify(file_path):
+    """Inform the user and minify the file"""
+    try:
+        minify(file_path)
+        now_time = datetime.datetime.now().time()
+        pretty_now_time = str(now_time).split('.')[0]
+        print "[%s] Minified %s" % (pretty_now_time, file_path)
 
+        update_error_logs(False, file_path)
+
+    except MinifyFailed:
+        print "Error minifying %s" % file_path
+        update_error_logs(True, file_path)
+    
+    
 def continually_monitor_files(path_regexps, project_path):
+    """Repeatedly check for file changes. A bit slow."""
     while True:
         for file_path in all_monitored_files(path_regexps, project_path):
             if is_minifiable(file_path) and needs_minifying(file_path):
-                try:
-                    minify(file_path)
-
-                    # inform the user:
-                    now_time = datetime.datetime.now().time()
-                    pretty_now_time = str(now_time).split('.')[0]
-                    print "[%s] Minified %s" % (pretty_now_time, file_path)
-
-                    update_error_logs(False, file_path)
-
-                except MinifyFailed:
-                    print "Error minifying %s" % file_path
-                    update_error_logs(True, file_path)
+                tell_user_and_minify(file_path)
                         
         time.sleep(1)
 
-
+def get_notified(path_regexps, project_path):
+    """Get notified when files change, and minify them. """
+    observer = Observer()
+    observer.start()
+    
+    def file_changed(file_change_event):
+        """Callback for when a file has changed"""
+        file_path = file_change_event.name
+        if is_minifiable(file_path) and needs_minifying(file_path):
+            tell_user_and_minify(file_path)    
+    
+    stream = Stream(file_changed, project_path, file_events=True)
+    observer.schedule(stream)
+                
 if __name__ == '__main__':
     if sys.platform == 'win32':
         java_installed = is_installed('java.exe')
@@ -275,12 +289,15 @@ if __name__ == '__main__':
         print "Look at .mash_example in %s for an example." % os.path.abspath(os.path.dirname(__file__))
         sys.exit()
 
-    print "Monitoring JavaScript and CSS files for changes."
+    print "Monitoring JS and CSS files for changes."
     print "Press Ctrl-C to quit or Ctrl-Z to stop."
-    print ""
-
+    print ""    
+       
     try:
-        continually_monitor_files(path_regexps, project_path)
+        if mac:
+            get_notified(path_regexps, project_path)    
+        else: 
+            continually_monitor_files(path_regexps, project_path)
     except KeyboardInterrupt:
         print "" # for tidyness' sake
-
+            
