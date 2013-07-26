@@ -238,14 +238,17 @@ def tell_user_and_minify(file_path):
     except MinifyFailed:
         print "Error minifying %s" % file_path
         update_error_logs(True, file_path)
-    
+
+def monitor_files(path_regexps, project_path):
+    """ Check files for changes. """
+    for file_path in all_monitored_files(path_regexps, project_path):
+        if is_minifiable(file_path) and needs_minifying(file_path):
+            tell_user_and_minify(file_path)
     
 def continually_monitor_files(path_regexps, project_path):
     """Repeatedly check for file changes. A bit slow."""
     while True:
-        for file_path in all_monitored_files(path_regexps, project_path):
-            if is_minifiable(file_path) and needs_minifying(file_path):
-                tell_user_and_minify(file_path)
+        monitor_files(path_regexps, project_path)
                         
         time.sleep(1)
 
@@ -272,18 +275,22 @@ if __name__ == '__main__':
         print "You need Java installed and on your PATH to run MashedPotato."
         sys.exit(1)
     
+    update_all = False
+    if "--update-all" in sys.argv:
+        sys.argv.remove("--update-all")
+        update_all = True
+
     try:
         project_path = sys.argv[1]
         project_path = os.path.abspath(project_path)
         configuration_path = os.path.join(project_path, ".mash")
     except IndexError:
-        print "Usage: ./mashed_potato <directory containing .mash file>"
+        print "Usage: ./mashed_potato <directory containing .mash file> [--update-all]"
         sys.exit()
 
     if os.path.exists(configuration_path):
         configuration_file = open(configuration_path, 'r').read()
         path_regexps = get_paths_from_configuration(project_path, configuration_file)
-
     else:
         print "There isn't a .mash file at \"%s\"." % os.path.abspath(project_path)
         print "Look at .mash_example in %s for an example." % os.path.abspath(os.path.dirname(__file__))
@@ -293,6 +300,11 @@ if __name__ == '__main__':
     print "Press Ctrl-C to quit or Ctrl-Z to stop."
     print ""    
        
+    if update_all:
+        print "Updating all files..."
+        monitor_files(path_regexps, project_path)
+        print "Finished updating all files."
+
     try:
         if mac:
             get_notified(path_regexps, project_path)    
@@ -300,4 +312,3 @@ if __name__ == '__main__':
             continually_monitor_files(path_regexps, project_path)
     except KeyboardInterrupt:
         print "" # for tidyness' sake
-            

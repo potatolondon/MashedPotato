@@ -28,3 +28,4 @@ Then just fire up MashedPotato, and ... that's it! MashedPotato will
 monitor those directories, and automatically reminify any modified
 files.
 
+Start MashedPotato with --update-all to recompress all files that have changed since the last compression or haven't been compressed yet.
